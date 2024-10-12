@@ -12,6 +12,22 @@ async function fetchTodos() {
   todos.value = items;
 }
 
+import { get } from "aws-amplify/api";
+
+async function getItem() {
+  try {
+    const restOperation = get({
+      apiName: "myRestApi",
+      path: "items",
+    });
+    const response = await restOperation.response;
+    console.log("GET call succeeded: ", response);
+    console.log("response json: ", response.body.json());
+  } catch (error: any) {
+    console.log("GET call failed: ", JSON.parse(error.response.body));
+  }
+}
+
 async function createTodo() {
   await client.models.Todo.create({
     content: window.prompt("Todo content?"),
@@ -21,6 +37,7 @@ async function createTodo() {
 
 onMounted(() => {
   fetchTodos();
+  getItem();
 });
 </script>
 
