@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import type { Schema } from "../../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
 
-const client = generateClient<Schema>();
 // create a reactive reference to the array of todos
 const todos = ref<Array<Schema["Todo"]["type"]>>([]);
 
-async function fetchTodos() {
-  const { data: items, errors } = await client.models.Todo.list();
-  todos.value = items;
-}
-
 import { get } from "aws-amplify/api";
+import { post } from "aws-amplify/api";
 
 async function getItem() {
   try {
@@ -23,20 +17,45 @@ async function getItem() {
     const response = await restOperation.response;
     console.log("GET call succeeded: ", response);
     console.log("response json: ", response.body.json());
+
+    const responseData = await response.body.json();
+    console.log("response data: ", responseData);
+
+    todos.value = responseData as Schema["Todo"]["type"][];
   } catch (error: any) {
     console.log("GET call failed: ", JSON.parse(error.response.body));
   }
 }
 
+async function postItem(addContent: any) {
+  try {
+    const restOperation = post({
+      apiName: "myRestApi",
+      path: "items",
+      options: {
+        body: {
+          content: addContent,
+        },
+      },
+    });
+
+    const { body } = await restOperation.response;
+    const response = await body.json();
+
+    console.log("POST call succeeded");
+    console.log(response);
+  } catch (error: any) {
+    console.log("POST call failed: ", JSON.parse(error.response.body));
+  }
+}
+
 async function createTodo() {
-  await client.models.Todo.create({
-    content: window.prompt("Todo content?"),
-  });
-  fetchTodos();
+  const addContent = window.prompt("Todo content?");
+  await postItem(addContent);
+  getItem();
 }
 
 onMounted(() => {
-  fetchTodos();
   getItem();
 });
 </script>
