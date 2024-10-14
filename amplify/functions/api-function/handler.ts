@@ -11,13 +11,13 @@ import axios from "axios";
 Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
-const todos = ref<Array<Schema["Todo"]["type"]>>([]);
+const programs = ref<Array<Schema["Program"]["type"]>>([]);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   switch (event.httpMethod) {
     case "GET":
-      const { data: items, errors } = await client.models.Todo.list();
-      todos.value = items;
+      const { data: items, errors } = await client.models.Program.list();
+      programs.value = items;
 
       return {
         statusCode: 200,
@@ -42,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const stationId = pathParams[1];
       const startDateTime = pathParams[2];
 
-      const title = await client.models.Todo.create({
+      const title = await client.models.Program.create({
         stationId: stationId,
         title: await programTitle(startDateTime, stationId),
       });

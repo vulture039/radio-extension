@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
 import type { Schema } from "../../amplify/data/resource";
-
-// create a reactive reference to the array of todos
-const todos = ref<Array<Schema["Todo"]["type"]>>([]);
-
 import { get } from "aws-amplify/api";
 import { post } from "aws-amplify/api";
+import { onMounted, ref } from "vue";
+
+const programs = ref<Array<Schema["Program"]["type"]>>([]);
 
 async function getItem() {
   try {
@@ -15,13 +13,10 @@ async function getItem() {
       path: "items",
     });
     const response = await restOperation.response;
-    console.log("GET call succeeded: ", response);
-    console.log("response json: ", response.body.json());
-
     const responseData = await response.body.json();
-    console.log("response data: ", responseData);
+    console.log("GET call succeeded: ", responseData);
 
-    todos.value = responseData as Schema["Todo"]["type"][];
+    programs.value = responseData as Schema["Program"]["type"][];
   } catch (error: any) {
     console.log("GET call failed: ", JSON.parse(error.response.body));
   }
@@ -42,14 +37,13 @@ async function postItem(url: any) {
     const { body } = await restOperation.response;
     const response = await body.json();
 
-    console.log("POST call succeeded");
-    console.log(response);
+    console.log("POST call succeeded: ", response);
   } catch (error: any) {
     console.log("POST call failed: ", JSON.parse(error.response.body));
   }
 }
 
-async function createTodo() {
+async function createProgram() {
   const url = window.prompt("save url");
   await postItem(url);
   getItem();
@@ -62,10 +56,10 @@ onMounted(() => {
 
 <template>
   <div>
-    <button @click="createTodo">Add new todo</button>
+    <button @click="createProgram">Add new program</button>
     <ul>
-      <li v-for="todo in todos" :key="todo.id">
-        {{ todo }}
+      <li v-for="program in programs" :key="program.id">
+        {{ program }}
       </li>
     </ul>
   </div>
