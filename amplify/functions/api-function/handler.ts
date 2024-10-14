@@ -1,16 +1,16 @@
-import type { APIGatewayProxyHandler } from "aws-lambda";
-
-import { onMounted, ref } from "vue";
-import type { Schema } from "../../data/resource";
-import { generateClient } from "aws-amplify/data";
-
 import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
+import type { APIGatewayProxyHandler } from "aws-lambda";
+import type { Schema } from "../../data/resource";
 import outputs from "../../../amplify_outputs.json";
+
+import { ref } from "vue";
+import { parse, subHours, format } from "date-fns";
+import axios from "axios";
 
 Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
-// create a reactive reference to the array of todos
 const todos = ref<Array<Schema["Todo"]["type"]>>([]);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -26,7 +26,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           "Access-Control-Allow-Origin": "*", // Restrict this to domains you trust
           "Access-Control-Allow-Headers": "*", // Specify only the headers you need to allow
         },
-        // body: JSON.stringify("Hello from myFunction!"),
         body: JSON.stringify(items),
       };
     case "POST":
@@ -37,9 +36,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         };
       }
 
-      const postData = JSON.parse(event.body);
-      await client.models.Todo.create({
-        content: postData.content,
+      const url = JSON.parse(event.body).url;
+      const pathParams = url.split("/#!/")[1].split("/");
+      const isOnAir = pathParams[0] === "live";
+      const stationId = pathParams[1];
+      const startDateTime = pathParams[2];
+
+      const title = await client.models.Todo.create({
+        stationId: stationId,
+        title: await programTitle(startDateTime, stationId),
       });
 
       return {
@@ -56,4 +61,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body: JSON.stringify({ message: "Method Not Allowed" }),
       };
   }
+};
+
+const programTitle = async (
+  startDateTime: string,
+  stationId: string
+): Promise<string> => {
+  const date = parse(startDateTime, "yyyyMMddHHmmss", new Date());
+  // 29時までは当日の扱いとなるため, 5時間減算する
+  const date_ = subHours(date, 5);
+  const startDate = format(date_, "yyyyMMdd");
+
+  const { data } = await axios.get(
+    `https://radiko.jp/v4/program/station/date/${startDate}/${stationId}.json`
+  );
+
+  const program = data.stations
+    .find((station: any) => station.station_id === stationId)
+    .programs.program.find((program: any) => program.ft === startDateTime);
+
+  return program.title;
 };

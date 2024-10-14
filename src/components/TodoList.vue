@@ -27,14 +27,14 @@ async function getItem() {
   }
 }
 
-async function postItem(addContent: any) {
+async function postItem(url: any) {
   try {
     const restOperation = post({
       apiName: "myRestApi",
       path: "items",
       options: {
         body: {
-          content: addContent,
+          url: url,
         },
       },
     });
@@ -50,8 +50,8 @@ async function postItem(addContent: any) {
 }
 
 async function createTodo() {
-  const addContent = window.prompt("Todo content?");
-  await postItem(addContent);
+  const url = window.prompt("save url");
+  await postItem(url);
   getItem();
 }
 
@@ -65,7 +65,7 @@ onMounted(() => {
     <button @click="createTodo">Add new todo</button>
     <ul>
       <li v-for="todo in todos" :key="todo.id">
-        {{ todo.content }}
+        {{ todo }}
       </li>
     </ul>
   </div>
