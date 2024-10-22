@@ -1,8 +1,8 @@
-import { defineBackend } from '@aws-amplify/backend';
-import { auth } from './auth/resource';
-import { data } from './data/resource';
+import { defineBackend } from "@aws-amplify/backend";
+import { auth } from "./auth/resource";
+import { data } from "./data/resource";
 
-import { myApiFunction } from "./functions/api-function/resource";
+import { programsApiFunction } from "./functions/programs-api-function/resource";
 import { Stack } from "aws-cdk-lib";
 import {
   AuthorizationType,
@@ -19,15 +19,15 @@ import { Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 const backend = defineBackend({
   auth,
   data,
-  myApiFunction
+  programsApiFunction,
 });
 
 // create a new API stack
 const apiStack = backend.createStack("api-stack");
 
 // create a new REST API
-const myRestApi = new RestApi(apiStack, "RestApi", {
-  restApiName: "myRestApi",
+const programsApi = new RestApi(apiStack, "RestApi", {
+  restApiName: "programsApi",
   deploy: true,
   deployOptions: {
     stageName: "dev",
@@ -41,27 +41,21 @@ const myRestApi = new RestApi(apiStack, "RestApi", {
 
 // create a new Lambda integration
 const lambdaIntegration = new LambdaIntegration(
-  backend.myApiFunction.resources.lambda
+  backend.programsApiFunction.resources.lambda
 );
 
 // create a new resource path with IAM authorization
-const itemsPath = myRestApi.root.addResource("items", {
+const programsPath = programsApi.root.addResource("programs", {
   defaultMethodOptions: {
     authorizationType: AuthorizationType.IAM,
   },
 });
 
-// add methods you would like to create to the resource path
-itemsPath.addMethod("GET", lambdaIntegration);
-itemsPath.addMethod("POST", lambdaIntegration);
-itemsPath.addMethod("DELETE", lambdaIntegration);
-itemsPath.addMethod("PUT", lambdaIntegration);
+programsPath.addResource("{id}").addMethod("DELETE", lambdaIntegration);
 
-// add a proxy resource path to the API
-itemsPath.addProxy({
-  anyMethod: true,
-  defaultIntegration: lambdaIntegration,
-});
+// add methods you would like to create to the resource path
+programsPath.addMethod("GET", lambdaIntegration);
+programsPath.addMethod("POST", lambdaIntegration);
 
 // create a new Cognito User Pools authorizer
 const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
@@ -69,7 +63,7 @@ const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
 });
 
 // create a new resource path with Cognito authorization
-const booksPath = myRestApi.root.addResource("cognito-auth-path");
+const booksPath = programsApi.root.addResource("cognito-auth-path");
 booksPath.addMethod("GET", lambdaIntegration, {
   authorizationType: AuthorizationType.COGNITO,
   authorizer: cognitoAuth,
@@ -81,9 +75,9 @@ const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
     new PolicyStatement({
       actions: ["execute-api:Invoke"],
       resources: [
-        `${myRestApi.arnForExecuteApi("*", "/items", "dev")}`,
-        `${myRestApi.arnForExecuteApi("*", "/items/*", "dev")}`,
-        `${myRestApi.arnForExecuteApi("*", "/cognito-auth-path", "dev")}`,
+        `${programsApi.arnForExecuteApi("*", "/programs", "dev")}`,
+        `${programsApi.arnForExecuteApi("*", "/programs/*", "dev")}`,
+        `${programsApi.arnForExecuteApi("*", "/cognito-auth-path", "dev")}`,
       ],
     }),
   ],
@@ -101,10 +95,10 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 backend.addOutput({
   custom: {
     API: {
-      [myRestApi.restApiName]: {
-        endpoint: myRestApi.url,
-        region: Stack.of(myRestApi).region,
-        apiName: myRestApi.restApiName,
+      [programsApi.restApiName]: {
+        endpoint: programsApi.url,
+        region: Stack.of(programsApi).region,
+        apiName: programsApi.restApiName,
       },
     },
   },

@@ -55,6 +55,28 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         },
         body: JSON.stringify({ message: "POST Succeeded" }),
       };
+    case "DELETE":
+      console.log("delete");
+      console.log(event);
+      console.log(event.pathParameters);
+      const id = event.pathParameters?.id; 
+      if (!id) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ message: "DELETE failed" }),
+        };
+      }
+
+      await client.models.Program.delete({ id: id });
+
+      return {
+        statusCode: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*", // Restrict this to domains you trust
+          "Access-Control-Allow-Headers": "*", // Specify only the headers you need to allow
+        },
+        body: JSON.stringify({ message: "DELETE Succeeded" }),
+      };
     default:
       return {
         statusCode: 405,
