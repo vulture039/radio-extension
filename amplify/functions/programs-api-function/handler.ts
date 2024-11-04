@@ -59,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       console.log("delete");
       console.log(event);
       console.log(event.pathParameters);
-      const id = event.pathParameters?.id; 
+      const id = event.pathParameters?.id;
       if (!id) {
         return {
           statusCode: 400,

@@ -3,6 +3,7 @@ import { auth } from "./auth/resource";
 import { data } from "./data/resource";
 
 import { programsApiFunction } from "./functions/programs-api-function/resource";
+import { schedulesApiFunction } from "./functions/schedules-api-function/resource";
 import { Stack } from "aws-cdk-lib";
 import {
   AuthorizationType,
@@ -20,14 +21,15 @@ const backend = defineBackend({
   auth,
   data,
   programsApiFunction,
+  schedulesApiFunction,
 });
 
 // create a new API stack
 const apiStack = backend.createStack("api-stack");
 
 // create a new REST API
-const programsApi = new RestApi(apiStack, "RestApi", {
-  restApiName: "programsApi",
+const radioExtensionApi = new RestApi(apiStack, "RestApi", {
+  restApiName: "radioExtensionApi",
   deploy: true,
   deployOptions: {
     stageName: "dev",
@@ -44,8 +46,12 @@ const lambdaIntegration = new LambdaIntegration(
   backend.programsApiFunction.resources.lambda
 );
 
+const schedulesLambdaIntegration = new LambdaIntegration(
+  backend.schedulesApiFunction.resources.lambda
+);
+
 // create a new resource path with IAM authorization
-const programsPath = programsApi.root.addResource("programs", {
+const programsPath = radioExtensionApi.root.addResource("programs", {
   defaultMethodOptions: {
     authorizationType: AuthorizationType.IAM,
   },
@@ -63,11 +69,24 @@ const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
 });
 
 // create a new resource path with Cognito authorization
-const booksPath = programsApi.root.addResource("cognito-auth-path");
+const booksPath = radioExtensionApi.root.addResource("cognito-auth-path");
 booksPath.addMethod("GET", lambdaIntegration, {
   authorizationType: AuthorizationType.COGNITO,
   authorizer: cognitoAuth,
 });
+
+// create a new resource path with IAM authorization
+const schedulesPath = radioExtensionApi.root.addResource("schedules", {
+  defaultMethodOptions: {
+    authorizationType: AuthorizationType.IAM,
+  },
+});
+
+// add methods you would like to create to the resource path
+schedulesPath
+  .addResource("{stationId}")
+  .addResource("{title}")
+  .addMethod("GET", schedulesLambdaIntegration);
 
 // create a new IAM policy to allow Invoke access to the API
 const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
@@ -75,9 +94,15 @@ const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
     new PolicyStatement({
       actions: ["execute-api:Invoke"],
       resources: [
-        `${programsApi.arnForExecuteApi("*", "/programs", "dev")}`,
-        `${programsApi.arnForExecuteApi("*", "/programs/*", "dev")}`,
-        `${programsApi.arnForExecuteApi("*", "/cognito-auth-path", "dev")}`,
+        `${radioExtensionApi.arnForExecuteApi("*", "/programs", "dev")}`,
+        `${radioExtensionApi.arnForExecuteApi("*", "/programs/*", "dev")}`,
+        `${radioExtensionApi.arnForExecuteApi(
+          "*",
+          "/cognito-auth-path",
+          "dev"
+        )}`,
+        `${radioExtensionApi.arnForExecuteApi("*", "/schedules", "dev")}`,
+        `${radioExtensionApi.arnForExecuteApi("*", "/schedules/*", "dev")}`,
       ],
     }),
   ],
@@ -95,10 +120,10 @@ backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
 backend.addOutput({
   custom: {
     API: {
-      [programsApi.restApiName]: {
-        endpoint: programsApi.url,
-        region: Stack.of(programsApi).region,
-        apiName: programsApi.restApiName,
+      [radioExtensionApi.restApiName]: {
+        endpoint: radioExtensionApi.url,
+        region: Stack.of(radioExtensionApi).region,
+        apiName: radioExtensionApi.restApiName,
       },
     },
   },
