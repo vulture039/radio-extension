@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
+    "@aws-amplify/ui-vue": "^4.2.22",
     "aws-amplify": "^6.6.2",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
