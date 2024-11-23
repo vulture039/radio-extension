@@ -12,7 +12,6 @@ import {
   LambdaIntegration,
   RestApi,
 } from "aws-cdk-lib/aws-apigateway";
-import { Policy, PolicyStatement } from "aws-cdk-lib/aws-iam";
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -50,10 +49,16 @@ const schedulesLambdaIntegration = new LambdaIntegration(
   backend.schedulesApiFunction.resources.lambda
 );
 
-// create a new resource path with IAM authorization
+// create a new Cognito User Pools authorizer
+const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
+  cognitoUserPools: [backend.auth.resources.userPool],
+});
+
+// create a new resource path with COGNITO authorization
 const programsPath = radioExtensionApi.root.addResource("programs", {
   defaultMethodOptions: {
-    authorizationType: AuthorizationType.IAM,
+    authorizationType: AuthorizationType.COGNITO,
+    authorizer: cognitoAuth,
   },
 });
 
@@ -63,11 +68,6 @@ programsPath.addResource("{id}").addMethod("DELETE", lambdaIntegration);
 programsPath.addMethod("GET", lambdaIntegration);
 programsPath.addMethod("POST", lambdaIntegration);
 
-// create a new Cognito User Pools authorizer
-const cognitoAuth = new CognitoUserPoolsAuthorizer(apiStack, "CognitoAuth", {
-  cognitoUserPools: [backend.auth.resources.userPool],
-});
-
 // create a new resource path with Cognito authorization
 const booksPath = radioExtensionApi.root.addResource("cognito-auth-path");
 booksPath.addMethod("GET", lambdaIntegration, {
@@ -75,10 +75,11 @@ booksPath.addMethod("GET", lambdaIntegration, {
   authorizer: cognitoAuth,
 });
 
-// create a new resource path with IAM authorization
+// create a new resource path with COGNITO authorization
 const schedulesPath = radioExtensionApi.root.addResource("schedules", {
   defaultMethodOptions: {
-    authorizationType: AuthorizationType.IAM,
+    authorizationType: AuthorizationType.COGNITO,
+    authorizer: cognitoAuth,
   },
 });
 
@@ -87,34 +88,6 @@ schedulesPath
   .addResource("{stationId}")
   .addResource("{title}")
   .addMethod("GET", schedulesLambdaIntegration);
-
-// create a new IAM policy to allow Invoke access to the API
-const apiRestPolicy = new Policy(apiStack, "RestApiPolicy", {
-  statements: [
-    new PolicyStatement({
-      actions: ["execute-api:Invoke"],
-      resources: [
-        `${radioExtensionApi.arnForExecuteApi("*", "/programs", "dev")}`,
-        `${radioExtensionApi.arnForExecuteApi("*", "/programs/*", "dev")}`,
-        `${radioExtensionApi.arnForExecuteApi(
-          "*",
-          "/cognito-auth-path",
-          "dev"
-        )}`,
-        `${radioExtensionApi.arnForExecuteApi("*", "/schedules", "dev")}`,
-        `${radioExtensionApi.arnForExecuteApi("*", "/schedules/*", "dev")}`,
-      ],
-    }),
-  ],
-});
-
-// attach the policy to the authenticated and unauthenticated IAM roles
-backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(
-  apiRestPolicy
-);
-backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
-  apiRestPolicy
-);
 
 // add outputs to the configuration file
 backend.addOutput({

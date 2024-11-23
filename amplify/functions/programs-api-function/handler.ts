@@ -41,12 +41,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const isOnAir = pathParams[0] === "live";
       const stationId = pathParams[1];
       const startDateTime = pathParams[2];
+      const userId = event.requestContext.authorizer?.claims?.sub;
 
-      const title = await client.models.Program.create({
-        stationId: stationId,
-        title: await programTitle(startDateTime, stationId),
-      });
-
+      try {
+        await client.models.Program.create({
+          userId: userId,
+          stationId: stationId,
+          title: await programTitle(startDateTime, stationId),
+        });
+      } catch (exception) {
+        console.log("create failed: ", exception);
+      }
+      console.log("created!");
       return {
         statusCode: 200,
         headers: {

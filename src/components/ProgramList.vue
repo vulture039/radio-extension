@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Schedule } from "aws-cdk-lib/aws-events";
 import type { Schema } from "../../amplify/data/resource";
 import type { Schedules } from "../types/schedules";
 import { get, post, del } from "aws-amplify/api";
@@ -155,6 +154,8 @@ const filteredSchedules = computed(() => {
           <th scope="col">削除</th>
           <th scope="col">放送局</th>
           <th scope="col">番組名</th>
+          <th scope="col">id</th>
+          <th scope="col">userId</th>
         </tr>
       </thead>
       <tbody>
@@ -164,6 +165,8 @@ const filteredSchedules = computed(() => {
           </td>
           <td v-text="program.stationId"></td>
           <td v-text="program.title"></td>
+          <td v-text="program.id"></td>
+          <td v-text="program.userId"></td>
         </tr>
       </tbody>
     </table>
