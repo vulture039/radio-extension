@@ -62,7 +62,7 @@ const programsPath = radioExtensionApi.root.addResource("programs", {
   },
 });
 
-programsPath.addResource("{id}").addMethod("DELETE", lambdaIntegration);
+programsPath.addResource("{timestamp}").addMethod("DELETE", lambdaIntegration);
 
 // add methods you would like to create to the resource path
 programsPath.addMethod("GET", lambdaIntegration);

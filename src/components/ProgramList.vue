@@ -85,10 +85,10 @@ async function createProgram() {
 
 async function deleteProgram() {
   try {
-    const deletePromises = selectedIds.value.map(async (id) => {
+    const deletePromises = selectedIds.value.map(async (timestamp) => {
       del({
         apiName: "radioExtensionApi",
-        path: `programs/${id}`,
+        path: `programs/${timestamp}`,
       });
     });
 
@@ -147,26 +147,22 @@ const filteredSchedules = computed(() => {
   <div>
     <table>
       <caption>
-        お気に入りの番組
+        お気に入り番組一覧
       </caption>
       <thead>
         <tr>
           <th scope="col">削除</th>
           <th scope="col">放送局</th>
           <th scope="col">番組名</th>
-          <th scope="col">id</th>
-          <th scope="col">userId</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="program in programs" :key="program.id">
+        <tr v-for="program in programs" :key="program.timestamp">
           <td>
-            <input type="checkbox" v-model="selectedIds" :value="program.id" />
+            <input type="checkbox" v-model="selectedIds" :value="program.timestamp" />
           </td>
           <td v-text="program.stationId"></td>
           <td v-text="program.title"></td>
-          <td v-text="program.id"></td>
-          <td v-text="program.userId"></td>
         </tr>
       </tbody>
     </table>
@@ -191,7 +187,7 @@ const filteredSchedules = computed(() => {
 
     <table>
       <caption>
-        放送予定
+        放送予定一覧
       </caption>
       <thead>
         <tr>

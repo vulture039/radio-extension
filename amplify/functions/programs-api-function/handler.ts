@@ -14,10 +14,12 @@ const client = generateClient<Schema>();
 const programs = ref<Array<Schema["Program"]["type"]>>([]);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+  const userId = event.requestContext.authorizer?.claims?.sub;
   switch (event.httpMethod) {
     case "GET":
-      const { data: items, errors } = await client.models.Program.list();
-      programs.value = items;
+      const { data: items, errors } = await client.models.Program.list({
+        userId: userId,
+      });
 
       return {
         statusCode: 200,
@@ -41,11 +43,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const isOnAir = pathParams[0] === "live";
       const stationId = pathParams[1];
       const startDateTime = pathParams[2];
-      const userId = event.requestContext.authorizer?.claims?.sub;
 
       try {
         await client.models.Program.create({
           userId: userId,
+          timestamp: Date.now(),
           stationId: stationId,
           title: await programTitle(startDateTime, stationId),
         });
@@ -65,15 +67,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       console.log("delete");
       console.log(event);
       console.log(event.pathParameters);
-      const id = event.pathParameters?.id;
-      if (!id) {
+      const timestamp = Number(event.pathParameters?.timestamp);
+      if (!timestamp) {
         return {
           statusCode: 400,
           body: JSON.stringify({ message: "DELETE failed" }),
         };
       }
 
-      await client.models.Program.delete({ id: id });
+      await client.models.Program.delete({
+        userId: userId,
+        timestamp: timestamp,
+      });
 
       return {
         statusCode: 200,

@@ -10,13 +10,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     case "GET":
       const title = event.pathParameters?.title;
       const stationId = event.pathParameters?.stationId;
-      const uid = 1;
+      const uid = event.requestContext.authorizer?.claims?.sub;
 
       const { data } = await axios.get(
         `https://radiko.jp/v3/api/program/search?key=${title}&station_id=${stationId}&uid=${uid}&app_id=pc`
       );
-      console.log("get");
-      console.log(data);
+      console.log("get program from radiko: ", data);
 
       return {
         statusCode: 200,
