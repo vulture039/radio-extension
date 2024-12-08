@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import type { Schema } from "../../amplify/data/resource";
-import type { Schedules } from "../types/schedules";
+import { onMounted, ref, defineProps, defineEmits } from "vue";
 import { get, post, del } from "aws-amplify/api";
-import { computed, onMounted, ref } from "vue";
+import type { Schema } from "../../amplify/data/resource";
 
-const programs = ref<Array<Schema["Program"]["type"]>>([]);
+type Program = Schema["Program"]["type"];
+
+const programs = ref<Program[]>([]);
 const selectedIds = ref<string[]>([]);
-const schedules = ref<Schedules>();
-const filter = ref<string>("past");
+const emit = defineEmits<{
+  (event: "update-programs", newPrograms: Program[]): void;
+}>();
 
 async function getItem() {
   try {
@@ -19,44 +21,14 @@ async function getItem() {
     const responseData = await response.body.json();
     console.log("GET succeeded: ", responseData);
 
-    programs.value = responseData as Schema["Program"]["type"][];
+    programs.value = responseData as Program[];
+    emit("update-programs", programs.value);
   } catch (error: any) {
     console.log("GET failed: ", JSON.parse(error.response.body));
   }
 }
 
-async function getSchedules() {
-  const promises = programs.value.map(async (program) => {
-    return await callApi(program.stationId as string, program.title as string);
-  });
-  schedules.value = (await Promise.all(promises)) as unknown as Schedules;
-}
-
-async function callApi(
-  stationId: string,
-  title: string
-): Promise<Schedules | null> {
-  try {
-    const restOperation = get({
-      apiName: "radioExtensionApi",
-      path: `schedules/${stationId}/${title}`,
-    });
-    const response = await restOperation.response;
-    const responseData = (await response.body.json()) as unknown as Schedules;
-    if (responseData == null) {
-      return null;
-    }
-    const schedules_: Schedules = responseData;
-    console.log("schedules: ", schedules_);
-    return schedules_;
-  } catch (error: any) {
-    console.log("GET failed: ", error);
-    console.log("GET failed: ", JSON.parse(error.response.body));
-    return null;
-  }
-}
-
-async function postItem(url: any) {
+async function postItem(url: string) {
   try {
     const restOperation = post({
       apiName: "radioExtensionApi",
@@ -78,7 +50,7 @@ async function postItem(url: any) {
 }
 
 async function createProgram() {
-  const url = window.prompt("番組ページのURLを入力してください");
+  const url = window.prompt("番組ページのURLを入力してください") as string;
   await postItem(url);
   getItem();
 }
@@ -91,8 +63,6 @@ async function deleteProgram() {
         path: `programs/${timestamp}`,
       });
     });
-
-    // 全ての削除リクエストが完了するまで待機
     await Promise.all(deletePromises);
 
     console.log("DELETE succeeded: ");
@@ -102,44 +72,8 @@ async function deleteProgram() {
   getItem();
 }
 
-function generateUrl(stationId: string, startTime: string) {
-  const date = new Date(startTime);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const second = date.getSeconds();
-
-  const dateTimeString = `${year}${month < 10 ? "0" + month : month}${
-    day < 10 ? "0" + day : day
-  }${hour < 10 ? "0" + hour : hour}${minute < 10 ? "0" + minute : minute}${
-    second < 10 ? "0" + second : second
-  }`;
-
-  return "https://radiko.jp/#!/ts/" + stationId + "/" + dateTimeString;
-}
-
 onMounted(async () => {
   await getItem();
-  await getSchedules();
-});
-
-const filteredSchedules = computed(() => {
-  if (!Array.isArray(schedules.value)) {
-    return [];
-  }
-
-  const filterNameList = ["past", "now", "future"];
-
-  if (filter.value === "all") {
-    return schedules.value.flatMap((obj) => obj.data);
-  } else if (filterNameList.includes(filter.value as string)) {
-    return schedules.value
-      .flatMap((obj) => obj.data)
-      .filter((schedule) => schedule.status === filter.value);
-  }
-  return [];
 });
 </script>
 
@@ -159,7 +93,11 @@ const filteredSchedules = computed(() => {
       <tbody>
         <tr v-for="program in programs" :key="program.timestamp">
           <td>
-            <input type="checkbox" v-model="selectedIds" :value="program.timestamp" />
+            <input
+              type="checkbox"
+              v-model="selectedIds"
+              :value="program.timestamp"
+            />
           </td>
           <td v-text="program.stationId"></td>
           <td v-text="program.title"></td>
@@ -168,48 +106,6 @@ const filteredSchedules = computed(() => {
     </table>
     <button @click="createProgram">お気に入りに追加する</button>
     <button @click="deleteProgram">お気に入りから削除する</button>
-    <br />
-    <button :class="{ selected: filter === 'past' }" @click="filter = 'past'">
-      タイムシフト
-    </button>
-    <button :class="{ selected: filter === 'now' }" @click="filter = 'now'">
-      ライブ
-    </button>
-    <button
-      :class="{ selected: filter === 'future' }"
-      @click="filter = 'future'"
-    >
-      放送予定
-    </button>
-    <button :class="{ selected: filter === 'all' }" @click="filter = 'all'">
-      全て
-    </button>
-
-    <table>
-      <caption>
-        放送予定一覧
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col">放送日</th>
-          <th scope="col">開始時間</th>
-          <th scope="col">番組名</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="schedule in filteredSchedules" :key="schedule.start_time">
-          <td v-text="schedule.program_date"></td>
-          <td v-text="schedule.start_time_s"></td>
-          <td>
-            <a
-              :href="generateUrl(schedule.station_id, schedule.start_time)"
-              v-text="schedule.title"
-              target="_blank"
-            ></a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
