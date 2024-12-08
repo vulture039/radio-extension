@@ -1,17 +1,14 @@
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
+import outputs from "../../../amplify_outputs.json";
+import axios from "axios";
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import type { Schema } from "../../data/resource";
-import outputs from "../../../amplify_outputs.json";
 
-import { ref } from "vue";
-import { parse, subHours, format } from "date-fns";
-import axios from "axios";
+const { DateTime } = require("luxon");
+const client = generateClient<Schema>();
 
 Amplify.configure(outputs);
-
-const client = generateClient<Schema>();
-const programs = ref<Array<Schema["Program"]["type"]>>([]);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const userId = event.requestContext.authorizer?.claims?.sub;
@@ -38,23 +35,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         };
       }
 
-      const url = JSON.parse(event.body).url;
-      const pathParams = url.split("/#!/")[1].split("/");
-      const isOnAir = pathParams[0] === "live";
+      const pathParams = JSON.parse(event.body).url.split("/#!/")[1].split("/");
       const stationId = pathParams[1];
-      const startDateTime = pathParams[2];
+      const isOnAir = pathParams[0] === "live";
+      const title = isOnAir
+        ? await programTitle(stationId)
+        : await programTitle(stationId, pathParams[2]);
 
       try {
         await client.models.Program.create({
           userId: userId,
           timestamp: Date.now(),
           stationId: stationId,
-          title: await programTitle(startDateTime, stationId),
+          title: title,
         });
       } catch (exception) {
         console.log("create failed: ", exception);
       }
-      console.log("created!");
       return {
         statusCode: 200,
         headers: {
@@ -64,9 +61,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body: JSON.stringify({ message: "POST Succeeded" }),
       };
     case "DELETE":
-      console.log("delete");
-      console.log(event);
-      console.log(event.pathParameters);
       const timestamp = Number(event.pathParameters?.timestamp);
       if (!timestamp) {
         return {
@@ -97,21 +91,37 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 };
 
 const programTitle = async (
-  startDateTime: string,
-  stationId: string
+  stationId: string,
+  startDateTimeString?: string
 ): Promise<string> => {
-  const date = parse(startDateTime, "yyyyMMddHHmmss", new Date());
-  // 29時までは当日の扱いとなるため, 5時間減算する
-  const date_ = subHours(date, 5);
-  const startDate = format(date_, "yyyyMMdd");
+  const startDateTime = getStartDateTime(startDateTimeString);
 
+  // 29時までは当日の扱いとなるため, 5時間減算する
+  const startDate = startDateTime.minus({ hours: 5 }).toFormat("yyyyMMdd");
   const { data } = await axios.get(
     `https://radiko.jp/v4/program/station/date/${startDate}/${stationId}.json`
   );
 
-  const program = data.stations
-    .find((station: any) => station.station_id === stationId)
-    .programs.program.find((program: any) => program.ft === startDateTime);
+  if (!startDateTimeString) {
+    // 放送中番組の開始日時を抽出
+    startDateTimeString = data.stations
+      .find((station: any) => station.station_id === stationId)
+      .programs.program.map((program: any) => program.ft)
+      .filter((ft: string) => ft <= startDateTime.toFormat("yyyyMMddHHmmss"))
+      .at(-1);
+  }
 
-  return program.title;
+  return data.stations
+    .find((station: any) => station.station_id === stationId)
+    .programs.program.find((program: any) => program.ft === startDateTimeString)
+    .title;
+};
+
+const getStartDateTime = (startDateTime?: string): typeof DateTime => {
+  if (startDateTime) {
+    return DateTime.fromFormat(startDateTime, "yyyyMMddHHmmss", {
+      zone: "Asia/Tokyo",
+    });
+  }
+  return DateTime.now().setZone("Asia/Tokyo");
 };
