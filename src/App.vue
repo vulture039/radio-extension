@@ -19,7 +19,9 @@ function updatePrograms(newPrograms: Program[]) {
   <main>
     <authenticator>
       <template v-slot="{ signOut }">
-        <button @click="signOut">Sign Out</button>
+        <div class="button-area">
+          <button @click="signOut">Sign Out</button>
+        </div>
         <ProgramList :programs="programs" @update-programs="updatePrograms" />
         <ScheduleList :programs="programs" />
       </template>
@@ -27,4 +29,9 @@ function updatePrograms(newPrograms: Program[]) {
   </main>
 </template>
 
-<style scoped></style>
+<style scoped>
+.button-area {
+  text-align: right;
+  margin-right: 20px;
+}
+</style>

@@ -1,6 +1,6 @@
 export interface Schedules {
   meta: Meta;
-  data: Array<ProgramData>;
+  data: ProgramData[];
 }
 
 type Meta = {

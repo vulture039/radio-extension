@@ -18,11 +18,14 @@ const filteredSchedules = computed(() => {
   }
 
   if (filter.value === "all") {
-    return schedules.value.flatMap((obj) => obj.data);
+    return schedules.value
+      .flatMap((obj) => obj.data)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
   } else if (filterNameList.includes(filter.value as string)) {
     return schedules.value
       .flatMap((obj) => obj.data)
-      .filter((schedule) => schedule.status === filter.value);
+      .filter((schedule) => schedule.status === filter.value)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
   }
   return [];
 });
@@ -38,6 +41,7 @@ async function getSchedules(programs: Program[]) {
   const promises = programs.map(async (program) => {
     return await callApi(program.stationId as string, program.title as string);
   });
+
   schedules.value = (await Promise.all(promises)) as unknown as Schedules;
 }
 
@@ -56,7 +60,6 @@ async function callApi(
       return null;
     }
     const schedules_: Schedules = responseData;
-    console.log("schedules: ", schedules_);
     return schedules_;
   } catch (error: any) {
     console.log("GET failed: ", error);
@@ -82,10 +85,18 @@ function generateUrl(stationId: string, startTime: string) {
 
   return "https://radiko.jp/#!/ts/" + stationId + "/" + dateTimeString;
 }
+
+function formatDate(startDate: string) {
+  return startDate.replace(/(\d{4})(\d{2})(\d{2})/, "$1/$2/$3");
+}
+function formatStartTime(startTime: string) {
+  return startTime.replace(/(\d{2})(\d{2})/, "$1:$2");
+}
 </script>
 
 <template>
-  <div>
+  <div class="schedule-area">
+    <h1>放送予定一覧</h1>
     <button :class="{ selected: filter === 'past' }" @click="filter = 'past'">
       タイムシフト
     </button>
@@ -103,9 +114,6 @@ function generateUrl(stationId: string, startTime: string) {
     </button>
 
     <table>
-      <caption>
-        放送予定一覧
-      </caption>
       <thead>
         <tr>
           <th scope="col">放送日</th>
@@ -115,8 +123,8 @@ function generateUrl(stationId: string, startTime: string) {
       </thead>
       <tbody>
         <tr v-for="schedule in filteredSchedules" :key="schedule.start_time">
-          <td v-text="schedule.program_date"></td>
-          <td v-text="schedule.start_time_s"></td>
+          <td v-text="formatDate(schedule.program_date)"></td>
+          <td v-text="formatStartTime(schedule.start_time_s)"></td>
           <td>
             <a
               :href="generateUrl(schedule.station_id, schedule.start_time)"
@@ -131,22 +139,28 @@ function generateUrl(stationId: string, startTime: string) {
 </template>
 
 <style scoped>
+.schedule-area {
+  margin: 20px;
+  padding-top: 20px;
+  text-align: center;
+}
+
 table {
   border-collapse: collapse;
   border: 2px solid rgb(140 140 140);
   font-family: sans-serif;
   font-size: 0.8rem;
   letter-spacing: 1px;
-}
-
-caption {
-  caption-side: top;
-  padding: 10px;
-  font-weight: bold;
+  margin: 10px auto;
+  margin-top: 10px;
 }
 
 thead {
   background-color: rgb(228 240 245);
+}
+
+th {
+  font-weight: bold;
 }
 
 th,
@@ -163,7 +177,26 @@ tbody > tr:nth-of-type(even) {
   background-color: rgb(237 238 242);
 }
 
+tr td:last-child {
+  text-align: left;
+}
+
 button {
+  border-radius: 5px;
+  cursor: pointer;
   margin: 10px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: #e2e6ea;
+}
+
+button.selected {
+  background-color: #007bff;
+  color: white;
+  border: 2px solid #0056b3;
+  box-shadow: 0 4px 6px rgba(0, 123, 255, 0.5);
+  font-weight: bold;
 }
 </style>

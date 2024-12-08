@@ -19,7 +19,6 @@ async function getItem() {
     });
     const response = await restOperation.response;
     const responseData = await response.body.json();
-    console.log("GET succeeded: ", responseData);
 
     programs.value = responseData as Program[];
     emit("update-programs", programs.value);
@@ -42,8 +41,6 @@ async function postItem(url: string) {
 
     const { body } = await restOperation.response;
     const response = await body.json();
-
-    console.log("POST succeeded: ", response);
   } catch (error: any) {
     console.log("POST failed: ", JSON.parse(error.response.body));
   }
@@ -64,8 +61,6 @@ async function deleteProgram() {
       });
     });
     await Promise.all(deletePromises);
-
-    console.log("DELETE succeeded: ");
   } catch (error: any) {
     console.log("DELETE failed: ", JSON.parse(error.response.body));
   }
@@ -78,11 +73,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="program-area">
+    <h1>お気に入り番組一覧</h1>
+    <button @click="createProgram">お気に入りに追加する</button>
+    <button @click="deleteProgram">お気に入りから削除する</button>
     <table>
-      <caption>
-        お気に入り番組一覧
-      </caption>
       <thead>
         <tr>
           <th scope="col">削除</th>
@@ -104,28 +99,30 @@ onMounted(async () => {
         </tr>
       </tbody>
     </table>
-    <button @click="createProgram">お気に入りに追加する</button>
-    <button @click="deleteProgram">お気に入りから削除する</button>
   </div>
 </template>
 
 <style scoped>
+.program-area {
+  margin: 20px;
+  text-align: center;
+}
+
 table {
   border-collapse: collapse;
   border: 2px solid rgb(140 140 140);
   font-family: sans-serif;
   font-size: 0.8rem;
   letter-spacing: 1px;
-}
-
-caption {
-  caption-side: top;
-  padding: 10px;
-  font-weight: bold;
+  margin: 10px auto;
 }
 
 thead {
   background-color: rgb(228 240 245);
+}
+
+th {
+  font-weight: bold;
 }
 
 th,
@@ -136,6 +133,10 @@ td {
 
 td:last-of-type {
   text-align: center;
+}
+
+tr td:last-child {
+  text-align: left;
 }
 
 tbody > tr:nth-of-type(even) {
