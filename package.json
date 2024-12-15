@@ -15,6 +15,7 @@
     "aws-amplify": "^6.6.2",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
+    "luxon": "^3.5.0",
     "vue": "^3.4.29"
   },
   "devDependencies": {
