@@ -1,9 +1,5 @@
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import axios from "axios";
-import { Amplify } from "aws-amplify";
-import outputs from "../../../amplify_outputs.json";
-
-Amplify.configure(outputs);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   switch (event.httpMethod) {
