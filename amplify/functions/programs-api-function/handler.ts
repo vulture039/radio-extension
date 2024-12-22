@@ -1,13 +1,13 @@
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
-// import outputs from "../../../amplify_outputs.json";
+import outputs from "../../../amplify_outputs.json";
 import axios from "axios";
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import type { Schema } from "../../data/resource";
 
 const { DateTime } = require("luxon");
 const client = generateClient<Schema>();
-// Amplify.configure(outputs);
+Amplify.configure(outputs);
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const userId = event.requestContext.authorizer?.claims?.sub;
