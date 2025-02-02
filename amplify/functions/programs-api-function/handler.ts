@@ -1,5 +1,6 @@
 import { Amplify } from "aws-amplify";
 import { generateClient } from "aws-amplify/data";
+// @ts-ignore
 import outputs from "../../../amplify_outputs.json";
 import axios from "axios";
 import type { APIGatewayProxyHandler } from "aws-lambda";
