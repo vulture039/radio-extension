@@ -1,22 +1,39 @@
-import { Amplify } from "aws-amplify";
-import { generateClient } from "aws-amplify/data";
-// @ts-ignore
-import outputs from "../../../amplify_outputs.json";
 import axios from "axios";
-import type { APIGatewayProxyHandler } from "aws-lambda";
-import type { Schema } from "../../data/resource";
 
-const { DateTime } = require("luxon");
-const client = generateClient<Schema>();
-Amplify.configure(outputs);
+const DateTime = require("luxon");
+import type { APIGatewayProxyHandler } from "aws-lambda";
+
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  DeleteItemCommand,
+  QueryCommand,
+} from "@aws-sdk/client-dynamodb";
+import { unmarshall } from "@aws-sdk/util-dynamodb";
+
+const client = new DynamoDBClient({ region: "ap-northeast-1" });
+
+// TODO: 変数として設定
+const tableName =
+  process.env.DynamoDBTableName ?? "REMOVED"; // prod
+// sandbox: "REMOVED";
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const userId = event.requestContext.authorizer?.claims?.sub;
   switch (event.httpMethod) {
     case "GET":
-      const { data: items, errors } = await client.models.Program.list({
-        userId: userId,
-      });
+      const getParams = {
+        TableName: tableName,
+        KeyConditionExpression: "userId = :userId",
+        ExpressionAttributeValues: {
+          ":userId": { S: userId },
+        },
+      };
+      const command = new QueryCommand(getParams);
+      const response = await client.send(command);
+      const items = response.Items
+        ? response.Items.map((item) => unmarshall(item))
+        : [];
 
       return {
         statusCode: 200,
@@ -43,12 +60,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         : await programTitle(stationId, pathParams[2]);
 
       try {
-        await client.models.Program.create({
-          userId: userId,
-          timestamp: Date.now(),
-          stationId: stationId,
-          title: title,
-        });
+        const putParams = {
+          TableName: tableName,
+          Item: {
+            userId: { S: userId },
+            timestamp: { N: Date.now().toString() },
+            stationId: { S: stationId },
+            title: { S: title },
+          },
+        };
+        const putCommand = new PutItemCommand(putParams);
+        await client.send(putCommand);
       } catch (exception) {
         console.log("create failed: ", exception);
       }
@@ -61,7 +83,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body: JSON.stringify({ message: "POST Succeeded" }),
       };
     case "DELETE":
-      const timestamp = Number(event.pathParameters?.timestamp);
+      const timestamp = event.pathParameters?.timestamp;
       if (!timestamp) {
         return {
           statusCode: 400,
@@ -69,10 +91,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         };
       }
 
-      await client.models.Program.delete({
-        userId: userId,
-        timestamp: timestamp,
-      });
+      const deleteParams = {
+        TableName: tableName,
+        Key: {
+          userId: { S: userId },
+          timestamp: { N: timestamp },
+        },
+      };
+      const delCommand = new DeleteItemCommand(deleteParams);
+      await client.send(delCommand);
 
       return {
         statusCode: 200,

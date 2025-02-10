@@ -12,6 +12,7 @@ import {
   LambdaIntegration,
   RestApi,
 } from "aws-cdk-lib/aws-apigateway";
+import { PolicyStatement } from "aws-cdk-lib/aws-iam";
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -41,9 +42,20 @@ const radioExtensionApi = new RestApi(apiStack, "RestApi", {
 });
 
 // create a new Lambda integration
-const lambdaIntegration = new LambdaIntegration(
-  backend.programsApiFunction.resources.lambda
-);
+const programs = backend.programsApiFunction.resources.lambda;
+const policy = new PolicyStatement({
+  actions: [
+    "dynamodb:PutItem",
+    "dynamodb:UpdateItem",
+    "dynamodb:GetItem",
+    "dynamodb:DeleteItem",
+    "dynamodb:BatchWriteItem",
+    "dynamodb:Query",
+  ],
+  resources: [backend.data.resources.tables["Program"].tableArn],
+});
+programs.addToRolePolicy(policy);
+const lambdaIntegration = new LambdaIntegration(programs);
 
 const schedulesLambdaIntegration = new LambdaIntegration(
   backend.schedulesApiFunction.resources.lambda
