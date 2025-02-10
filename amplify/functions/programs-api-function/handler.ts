@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const DateTime = require("luxon");
+import { DateTime } from "luxon";
 import type { APIGatewayProxyHandler } from "aws-lambda";
 
 import {
@@ -144,7 +143,7 @@ const programTitle = async (
     .title;
 };
 
-const getStartDateTime = (startDateTime?: string): typeof DateTime => {
+const getStartDateTime = (startDateTime?: string): DateTime => {
   if (startDateTime) {
     return DateTime.fromFormat(startDateTime, "yyyyMMddHHmmss", {
       zone: "Asia/Tokyo",
