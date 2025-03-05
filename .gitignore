@@ -33,3 +33,6 @@ coverage
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# env
+.env*

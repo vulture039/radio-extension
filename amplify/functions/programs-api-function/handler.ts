@@ -1,7 +1,7 @@
 import axios from "axios";
 import { DateTime } from "luxon";
 import type { APIGatewayProxyHandler } from "aws-lambda";
-
+import { env } from "$amplify/env/programs-api-function";
 import {
   DynamoDBClient,
   PutItemCommand,
@@ -10,12 +10,14 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 
-const client = new DynamoDBClient({ region: "ap-northeast-1" });
+console.log("--- environment-variables ---");
+console.log("env: ", env.ENV);
+console.log("region: ", env.REGION);
+console.log("tableName: ", env.TABLE_NAME);
+console.log("--- environment-variables ---");
 
-// TODO: 変数として設定
-const tableName =
-  process.env.DynamoDBTableName ?? "REMOVED"; // prod
-// sandbox: "REMOVED";
+const client = new DynamoDBClient({ region: env.REGION });
+const tableName = env.TABLE_NAME;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const userId = event.requestContext.authorizer?.claims?.sub;
