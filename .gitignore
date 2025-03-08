@@ -36,3 +36,4 @@ amplifyconfiguration*
 
 # env
 .env*
+!.env.example
