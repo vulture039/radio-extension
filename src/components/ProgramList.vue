@@ -74,7 +74,7 @@ onMounted(async () => {
 
 <template>
   <div class="program-area">
-    <h1>お気に入り番組一覧</h1>
+    <h1>お気に入り番組</h1>
     <button @click="createProgram">お気に入りに追加する</button>
     <button @click="deleteProgram">お気に入りから削除する</button>
     <table>

@@ -20,12 +20,12 @@ const filteredSchedules = computed(() => {
   if (filter.value === "all") {
     return schedules.value
       .flatMap((obj) => obj.data)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+      .sort((a, b) => b.start_time.localeCompare(a.start_time));
   } else if (filterNameList.includes(filter.value as string)) {
     return schedules.value
       .flatMap((obj) => obj.data)
       .filter((schedule) => schedule.status === filter.value)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+      .sort((a, b) => b.start_time.localeCompare(a.start_time));
   }
   return [];
 });
@@ -96,9 +96,9 @@ function formatStartTime(startTime: string) {
 
 <template>
   <div class="schedule-area">
-    <h1>放送予定一覧</h1>
+    <h1>放送予定</h1>
     <button :class="{ selected: filter === 'past' }" @click="filter = 'past'">
-      タイムシフト
+      タイムフリー
     </button>
     <button :class="{ selected: filter === 'now' }" @click="filter = 'now'">
       ライブ

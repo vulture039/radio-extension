@@ -20,10 +20,10 @@ function updatePrograms(newPrograms: Program[]) {
     <authenticator>
       <template v-slot="{ signOut }">
         <div class="button-area">
-          <button @click="signOut">Sign Out</button>
+          <button @click="signOut">ログアウト</button>
         </div>
-        <ProgramList :programs="programs" @update-programs="updatePrograms" />
         <ScheduleList :programs="programs" />
+        <ProgramList :programs="programs" @update-programs="updatePrograms" />
       </template>
     </authenticator>
   </main>
