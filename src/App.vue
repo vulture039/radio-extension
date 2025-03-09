@@ -34,4 +34,10 @@ function updatePrograms(newPrograms: Program[]) {
   text-align: right;
   margin-right: 20px;
 }
+button {
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 10px;
+  background: #999999;
+}
 </style>

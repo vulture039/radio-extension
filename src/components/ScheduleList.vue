@@ -141,7 +141,6 @@ function formatStartTime(startTime: string) {
 <style scoped>
 .schedule-area {
   margin: 20px;
-  padding-top: 20px;
   text-align: center;
 }
 
@@ -156,7 +155,7 @@ table {
 }
 
 thead {
-  background-color: rgb(228 240 245);
+  background-color: #404040;
 }
 
 th {
@@ -173,10 +172,6 @@ td:last-of-type {
   text-align: center;
 }
 
-tbody > tr:nth-of-type(even) {
-  background-color: rgb(237 238 242);
-}
-
 tr td:last-child {
   text-align: left;
 }
@@ -185,11 +180,7 @@ button {
   border-radius: 5px;
   cursor: pointer;
   margin: 10px;
-  transition: all 0.3s ease;
-}
-
-button:hover {
-  background-color: #e2e6ea;
+  background: #999999;
 }
 
 button.selected {

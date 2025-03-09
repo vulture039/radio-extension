@@ -75,8 +75,8 @@ onMounted(async () => {
 <template>
   <div class="program-area">
     <h1>お気に入り番組</h1>
-    <button @click="createProgram">お気に入りに追加する</button>
-    <button @click="deleteProgram">お気に入りから削除する</button>
+    <button @click="createProgram">追加</button>
+    <button @click="deleteProgram">削除</button>
     <table>
       <thead>
         <tr>
@@ -105,6 +105,7 @@ onMounted(async () => {
 <style scoped>
 .program-area {
   margin: 20px;
+  padding-top: 20px;
   text-align: center;
 }
 
@@ -118,7 +119,7 @@ table {
 }
 
 thead {
-  background-color: rgb(228 240 245);
+  background-color: #404040;
 }
 
 th {
@@ -139,11 +140,14 @@ tr td:last-child {
   text-align: left;
 }
 
-tbody > tr:nth-of-type(even) {
-  background-color: rgb(237 238 242);
+button {
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 10px;
+  background: #999999;
 }
 
-button {
-  margin: 10px;
+input[type="checkbox"] {
+  accent-color: transparent;
 }
 </style>
